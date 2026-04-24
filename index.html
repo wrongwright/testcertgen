@@ -246,23 +246,14 @@
         document.getElementById('loadingOverlay').style.display = 'flex';
         await wait();
         try {
+            // 1. DETERMINE CORRECT PDF TEMPLATE
             const selectedTemplate = document.querySelector('input[name="awardType"]:checked').value;
             const response = await fetch(selectedTemplate);
-            if (!response.ok) throw new Error(`Template not found.`);
+            if (!response.ok) throw new Error(`Could not find the template: ${selectedTemplate}`);
             const bytes = await response.arrayBuffer();
 
-            // Load SOURCE document ONCE
-            const srcDoc = await PDFDocument.load(bytes);
-            
-            // Create MASTER document
-            const master = await PDFDocument.create();
-            
-            // Embed the first page of the template once (Massive memory saving)
-            const [srcPage] = await master.copyPages(srcDoc, [0]);
-            const background = await master.embedPage(srcPage);
-            const { width, height } = srcPage.getSize();
-
             const names = Array.from(document.querySelectorAll('.name-row-input')).map(i => i.value.trim()).filter(v => v !== "");
+            const master = await PDFDocument.create();
             const badgeRaw = badgeSelect.value === 'Other' ? otherBadge.value.trim() : badgeSelect.value;
             const divValRaw = document.getElementById('division').value.trim();
             const dateObj = new Date(dateInput.value);
@@ -277,29 +268,26 @@
 
             for (let i = 0; i < names.length; i++) {
                 document.getElementById('progressText').innerText = `Processing ${i + 1} of ${names.length}...`;
-                if (i % 20 === 0) await wait();
-
-                // Instead of loading form fields, we create a new page and DRAW the template background
-                const page = master.addPage([width, height]);
-                page.drawPage(background);
-
-                // DRAW TEXT MANUALLY (This avoids document bloat from form flattening)
-                // Note: These coordinates are guesses based on standard St John templates. 
-                // You may need to adjust the x/y values below to match your PDF precisely.
-                page.drawText(names[i], { x: 100, y: 500, size: 30 });
-                page.drawText(badgeRaw, { x: 100, y: 400, size: 20 });
-                page.drawText(divValRaw, { x: 100, y: 350, size: 15 });
-                page.drawText(dateStr, { x: 100, y: 300, size: 15 });
+                if (i % 5 === 0) await wait();
+                const doc = await PDFDocument.load(bytes);
+                const form = doc.getForm();
+                try {
+                    form.getTextField('name').setText(names[i]);
+                    form.getTextField('bname').setText(badgeRaw);
+                    form.getTextField('division').setText(divValRaw);
+                    form.getTextField('date').setText(dateStr);
+                } catch (e) {}
+                form.flatten();
+                const [page] = await master.copyPages(doc, [0]);
+                master.addPage(page);
             }
-
-            const out = await master.save();
+            const out = await master.save({ useObjectStreams: true });
             const sanitize = (str) => str.toLowerCase().replace(/\s+/g, '_');
             const fileName = `${year}_${sanitize(divValRaw)}_${sanitize(badgeRaw)}_certificates.pdf`;
             download(out, fileName, "application/pdf");
         } catch (err) { alert(err.message); } finally { document.getElementById('loadingOverlay').style.display = 'none'; }
     }
     goBtn.onclick = generate;
-    pdfFile.onchange = validate;
     document.querySelectorAll('.v-check, #otherBadge').forEach(i => i.addEventListener('input', validate));
 </script>
 </body>
