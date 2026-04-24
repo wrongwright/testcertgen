@@ -183,12 +183,13 @@
     }
 
     function createEmptyRow(isTop = true) {
-        if (tBody.querySelectorAll('tr').length >= MAX_NAMES) return;
+        if (tBody.querySelectorAll('tr').length >= MAX_NAMES) return null;
         const tr = document.createElement('tr');
         tr.innerHTML = `<td class="row-num" style="color: #aeaeb2; text-align: center; font-weight: 600; font-size: 0.8em;"></td><td><input type="text" class="name-row-input" placeholder="Enter name..."></td>`;
         if (isTop) tBody.prepend(tr); else tBody.appendChild(tr);
         tr.querySelector('input').addEventListener('input', handleInputChange);
         tr.querySelector('input').addEventListener('keydown', handleKeydown);
+        return tr;
     }
 
     function handleInputChange(e) {
@@ -206,6 +207,7 @@
             createEmptyRow(true);
         }
 
+        // Deletion logic: remove row if cleared and not the top-most (empty) row
         if (idx !== 0 && e.target.value.trim() === "") {
             e.target.closest('tr').remove();
         }
@@ -240,17 +242,33 @@
 
     tBody.addEventListener('paste', (e) => {
         e.preventDefault();
-        const lines = e.clipboardData.getData('text').split(/\r?\n/).map(l => l.trim()).filter(l => l !== "");
+        const text = e.clipboardData.getData('text');
+        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l !== "");
+        if (lines.length === 0) return;
+
         const currentActive = getActiveCount();
-        const remaining = MAX_NAMES - currentActive;
-        const toAdd = lines.slice(0, remaining);
-        
+        const canAdd = MAX_NAMES - currentActive;
+        const toAdd = lines.slice(0, canAdd);
+
+        // Process reversed so the last prepended item is the first name in the list
         toAdd.reverse().forEach(name => {
-            const tr = createEmptyRow(true);
-            if(tr) tr.querySelector('.name-row-input').value = name;
+            const rows = tBody.querySelectorAll('tr');
+            const topInput = rows[0].querySelector('input');
+            
+            if (topInput.value.trim() === "") {
+                topInput.value = name;
+            } else {
+                const tr = createEmptyRow(true);
+                if (tr) tr.querySelector('input').value = name;
+            }
         });
-        
-        if (lines.length > remaining) alert(`Limit reached. ${lines.length - remaining} names skipped.`);
+
+        // Always ensure one empty row exists at top after pasting
+        if (tBody.querySelectorAll('tr')[0].querySelector('input').value !== "" && tBody.querySelectorAll('tr').length < MAX_NAMES) {
+            createEmptyRow(true);
+        }
+
+        if (lines.length > canAdd) alert(`Limit of ${MAX_NAMES} reached. ${lines.length - canAdd} names skipped.`);
         validate();
     });
 
@@ -263,6 +281,7 @@
             const selectedType = document.querySelector('input[name="awardType"]:checked').value;
             let templateBytes;
             if (selectedType === 'custom') {
+                if (customFileInput.files.length === 0) throw new Error("Please upload a custom template.");
                 templateBytes = await customFileInput.files[0].arrayBuffer();
             } else {
                 const response = await fetch(selectedType);
@@ -305,16 +324,14 @@
                     const drawCentred = (text, y, font, size) => {
                         const tw = font.widthOfTextAtSize(text, size);
                         const x = (pageSize.width / 2) - (tw / 2);
+                        // OFFSET CALCULATION: 25pt downward shift applied to original acrobat inputs
                         page.drawText(text, { x, y: y - 25, size, font, color: PDFLib.rgb(0, 0, 0) });
                     };
 
                     drawCentred(names[i], 463.323, fontRegular, 23);
                     drawCentred(divValRaw, 385.905, fontRegular, 23);
                     drawCentred(badgeRaw, 291.233, fontRegular, 23);
-                    
-                    // DATE FONT SIZE SET TO 21PT AS REQUESTED
-                    drawCentred(dateStr, 204.778, fontRegular, 21);
-                    
+                    drawCentred(dateStr, 204.778, fontRegular, 21); // Size 21 for Date
                 } else {
                     const doc = await PDFDocument.load(templateBytes);
                     const form = doc.getForm();
