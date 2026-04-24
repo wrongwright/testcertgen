@@ -92,7 +92,7 @@
 
 <div id="loadingOverlay">
     <div class="spinner"></div>
-    <div id="progressText">Starting Generation...</div>
+    <div id="progressText">Starting...</div>
 </div>
 
 <div class="app-card">
@@ -111,14 +111,8 @@
         <div class="section">
             <label>Award Type</label>
             <div class="radio-group">
-                <label class="radio-option">
-                    <input type="radio" name="awardType" value="gp.pdf" checked>
-                    <span>Grand Prior's</span>
-                </label>
-                <label class="radio-option">
-                    <input type="radio" name="awardType" value="cm.pdf">
-                    <span>Commissioner's</span>
-                </label>
+                <label class="radio-option"><input type="radio" name="awardType" value="gp.pdf" checked><span>Grand Prior's</span></label>
+                <label class="radio-option"><input type="radio" name="awardType" value="cm.pdf"><span>Commissioner's</span></label>
             </div>
         </div>
 
@@ -136,18 +130,15 @@
                         <option>Knowledge of the Order</option><option>Language</option><option>Leadership</option>
                         <option>Project Management</option><option>Road Safety</option><option>Situational First Aid</option>
                         <option>Sports</option><option>Technology</option><option>Welcome to St John</option><option>Wellbeing</option>
-                        <option value="Other">Other (Type manually...)</option>
+                        <option value="Other">Other (Specify below...)</option>
                     </select>
                 </div>
-                <input type="text" id="otherBadge" placeholder="Enter badge name..." style="display: none; margin-top: 12px;">
+                <input type="text" id="otherBadge" placeholder="Enter badge..." style="display: none; margin-top: 12px;">
             </div>
             <div><label>Division</label><input type="text" id="division" placeholder="My Division" class="v-check"></div>
         </div>
 
-        <div class="section">
-            <label>Date</label>
-            <input type="date" id="dateInput" class="date-input-field v-check">
-        </div>
+        <div class="section"><label>Date</label><input type="date" id="dateInput" class="date-input-field v-check"></div>
 
         <div class="section">
             <label>Member Names</label>
@@ -162,7 +153,7 @@
 </div>
 
 <script>
-    const { PDFDocument } = PDFLib;
+    const { PDFDocument, StandardFonts, TextAlignment } = PDFLib;
     const tBody = document.querySelector('#batchTable tbody');
     const badgeSelect = document.getElementById('badgeSelect');
     const otherBadge = document.getElementById('otherBadge');
@@ -170,9 +161,9 @@
     const dateInput = document.getElementById('dateInput');
     const countDisplay = document.getElementById('countDisplay');
 
-    const MAX_NAMES = 500;
+    // REDUCED LIMIT FOR SAFARI STABILITY
+    const MAX_NAMES = 300; 
     dateInput.valueAsDate = new Date();
-
     createEmptyRow(true);
 
     function getActiveCount() {
@@ -181,114 +172,101 @@
 
     function createEmptyRow(isTop = true) {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td class="row-num" style="color: #aeaeb2; text-align: center; font-weight: 600; font-size: 0.8em;"></td><td><input type="text" class="name-row-input" placeholder="Type or paste names here..."></td>`;
+        tr.innerHTML = `<td class="row-num" style="color: #aeaeb2; text-align: center; font-weight: 600; font-size: 0.8em;"></td><td><input type="text" class="name-row-input" placeholder="Enter name..."></td>`;
         if (isTop) tBody.prepend(tr); else tBody.appendChild(tr);
         tr.querySelector('input').addEventListener('input', handleInputChange);
-        tr.querySelector('input').addEventListener('keydown', handleKeydown);
-        return tr;
     }
 
     function handleInputChange(e) {
         const activeCount = getActiveCount();
         if (activeCount >= MAX_NAMES && e.target.value.trim() !== "") {
             e.target.value = e.target.value.slice(0, -1);
-            alert("Maximum limit of 500 names reached.");
+            alert(`Maximum limit of ${MAX_NAMES} names reached for stability.`);
             return;
         }
-        const rows = Array.from(tBody.querySelectorAll('tr'));
-        const idx = rows.indexOf(e.target.closest('tr'));
-        if (idx === 0 && e.target.value.trim() !== "" && rows.length < MAX_NAMES + 1) createEmptyRow(true);
-        if (idx !== 0 && e.target.value.trim() === "") e.target.closest('tr').remove();
+        if (Array.from(tBody.querySelectorAll('tr'))[0].querySelector('input').value !== "") createEmptyRow(true);
         validate();
-    }
-
-    function handleKeydown(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            const rows = Array.from(tBody.querySelectorAll('tr'));
-            const idx = rows.indexOf(e.target.closest('tr'));
-            if (idx > 0) rows[idx - 1].querySelector('input').focus();
-        }
     }
 
     badgeSelect.addEventListener('change', () => {
         otherBadge.style.display = badgeSelect.value === 'Other' ? 'block' : 'none';
-        if (badgeSelect.value !== 'Other') otherBadge.value = "";
         validate();
     });
 
     function validate() {
         const names = getActiveCount();
-        const badgeValid = badgeSelect.value && (badgeSelect.value !== 'Other' || otherBadge.value.trim() !== "");
         countDisplay.innerText = names;
         document.querySelectorAll('.row-num').forEach((td, i) => td.innerText = i + 1);
-        goBtn.disabled = !(badgeValid && document.getElementById('division').value.trim() !== "" && names > 0);
+        const badgeValid = badgeSelect.value && (badgeSelect.value !== 'Other' || otherBadge.value.trim() !== "");
+        goBtn.disabled = !(names > 0 && badgeValid && document.getElementById('division').value.trim() !== "");
     }
 
     tBody.addEventListener('paste', (e) => {
         e.preventDefault();
         const lines = e.clipboardData.getData('text').split(/\r?\n/).map(l => l.trim()).filter(l => l !== "");
         const currentActive = getActiveCount();
-        const remaining = MAX_NAMES - currentActive;
-        if (remaining <= 0) { alert("Limit reached."); return; }
-        const toAdd = lines.slice(0, remaining);
+        const toAdd = lines.slice(0, MAX_NAMES - currentActive);
         toAdd.reverse().forEach(name => {
             createEmptyRow(true);
             document.querySelectorAll('.name-row-input')[1].value = name;
         });
-        if (lines.length > toAdd.length) alert(`Limit of 500 reached. ${lines.length - toAdd.length} names skipped.`);
+        if (lines.length > toAdd.length) alert(`Limit reached. ${lines.length - toAdd.length} names skipped.`);
         validate();
     });
 
-    const wait = () => new Promise(res => setTimeout(res, 10));
-
     async function generate() {
         document.getElementById('loadingOverlay').style.display = 'flex';
-        await wait();
+        await new Promise(r => setTimeout(r, 100));
         try {
-            // 1. DETERMINE CORRECT PDF TEMPLATE
-            const selectedTemplate = document.querySelector('input[name="awardType"]:checked').value;
-            const response = await fetch(selectedTemplate);
-            if (!response.ok) throw new Error(`Could not find the template: ${selectedTemplate}`);
-            const bytes = await response.arrayBuffer();
+            const selected = document.querySelector('input[name="awardType"]:checked').value;
+            const response = await fetch(selected);
+            const templateBytes = await response.arrayBuffer();
 
             const names = Array.from(document.querySelectorAll('.name-row-input')).map(i => i.value.trim()).filter(v => v !== "");
             const master = await PDFDocument.create();
-            const badgeRaw = badgeSelect.value === 'Other' ? otherBadge.value.trim() : badgeSelect.value;
-            const divValRaw = document.getElementById('division').value.trim();
-            const dateObj = new Date(dateInput.value);
-            const year = dateObj.getFullYear();
             
-            const formatDate = (val) => {
-                const d = new Date(val);
-                const s = (n) => (n > 3 && n < 21) ? 'th' : ['th', 'st', 'nd', 'rd', 'th'][Math.min(n % 10, 4)];
-                return d.toLocaleDateString('en-AU', { weekday: 'long' }) + `, ${d.getDate()}${s(d.getDate())} ` + d.toLocaleDateString('en-AU', { month: 'long', year: 'numeric' });
-            };
-            const dateStr = formatDate(dateInput.value);
+            const fontBold = await master.embedFont(StandardFonts.HelveticaBold);
+            const fontRegular = await master.embedFont(StandardFonts.Helvetica);
+
+            const badge = badgeSelect.value === 'Other' ? otherBadge.value.trim() : badgeSelect.value;
+            const divVal = document.getElementById('division').value.trim();
+            const dateObj = new Date(dateInput.value);
+            const s = (n) => (n > 3 && n < 21) ? 'th' : ['th', 'st', 'nd', 'rd', 'th'][Math.min(n % 10, 4)];
+            const dateStr = dateObj.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).replace(/\d+/, (d) => `${d}${s(d)}`);
 
             for (let i = 0; i < names.length; i++) {
-                document.getElementById('progressText').innerText = `Processing ${i + 1} of ${names.length}...`;
-                if (i % 5 === 0) await wait();
-                const doc = await PDFDocument.load(bytes);
-                const form = doc.getForm();
-                try {
-                    form.getTextField('name').setText(names[i]);
-                    form.getTextField('bname').setText(badgeRaw);
-                    form.getTextField('division').setText(divValRaw);
-                    form.getTextField('date').setText(dateStr);
-                } catch (e) {}
+                document.getElementById('progressText').innerText = `Creating ${i + 1} of ${names.length}...`;
+                const srcDoc = await PDFDocument.load(templateBytes);
+                const form = srcDoc.getForm();
+
+                const mapping = [
+                    { id: 'name', val: names[i], font: fontBold },
+                    { id: 'bname', val: badge, font: fontBold },
+                    { id: 'division', val: divVal, font: fontRegular },
+                    { id: 'date', val: dateStr, font: fontRegular }
+                ];
+
+                mapping.forEach(f => {
+                    try {
+                        const field = form.getTextField(f.id);
+                        field.setText(f.val);
+                        field.updateAppearances(f.font);
+                        field.setAlignment(TextAlignment.Center);
+                    } catch (e) {}
+                });
+
                 form.flatten();
-                const [page] = await master.copyPages(doc, [0]);
+                const [page] = await master.copyPages(srcDoc, [0]);
                 master.addPage(page);
             }
-            const out = await master.save({ useObjectStreams: true });
+
+            const out = await master.save();
             const sanitize = (str) => str.toLowerCase().replace(/\s+/g, '_');
-            const fileName = `${year}_${sanitize(divValRaw)}_${sanitize(badgeRaw)}_certificates.pdf`;
+            const fileName = `${dateObj.getFullYear()}_${sanitize(divVal)}_${sanitize(badge)}_certificates.pdf`;
             download(out, fileName, "application/pdf");
         } catch (err) { alert(err.message); } finally { document.getElementById('loadingOverlay').style.display = 'none'; }
     }
     goBtn.onclick = generate;
-    document.querySelectorAll('.v-check, #otherBadge').forEach(i => i.addEventListener('input', validate));
 </script>
 </body>
 </html>
