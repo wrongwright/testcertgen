@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>St John Certificate Generator</title>
+    
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    
+    <script src="pdf-lib.min.js"></script>
+    <script src="download.min.js"></script>
+    
+    <style>
+        :root { 
+            --stj-red: #cf1126;
+            --stj-red-hover: #a50e1e;
+            --stj-red-alpha: rgba(207, 17, 38, 0.08); 
+            --bg: #f3f3f3;
+            --panel-bg: rgba(255, 255, 255, 0.9);
+            --text-main: #1a1a1a;
+            --text-secondary: #6e6e73;
+            --border: #d2d2d7;
+            --radius: 14px;
+            --radius-sm: 8px;
+            --font-stack: 'SF Pro Display', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+        }
+        
+        body { font-family: var(--font-stack); background: var(--bg); margin: 0; padding: 2vh 20px; display: flex; justify-content: center; height: 100vh; box-sizing: border-box; overflow: hidden; }
+        
+        .app-card { 
+            background: var(--panel-bg); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px); border-radius: var(--radius); 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1); width: 100%; max-width: 900px; display: flex; flex-direction: column; 
+            max-height: 94vh; border: 1px solid rgba(255,255,255,0.4); 
+        }
+        
+        .header { display: flex; flex-direction: column; padding: 25px 40px; border-bottom: 1px solid var(--border); flex-shrink: 0; gap: 20px; }
+        .header-top { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .logo { height: 50px; width: auto; }
+        h1 { font-size: 1.35em; color: var(--text-main); margin: 0; font-weight: 800; letter-spacing: -0.01em; white-space: nowrap; }
+
+        .header-actions { display: flex; align-items: center; gap: 15px; }
+        .count-pill { background: var(--stj-red-alpha); color: var(--stj-red); padding: 8px 16px; border-radius: 20px; font-weight: 700; font-size: 0.75em; text-transform: uppercase; letter-spacing: 0.05em; }
+
+        .btn-main { background: var(--stj-red); color: white; border: none; padding: 10px 24px; border-radius: var(--radius-sm); font-weight: 700; cursor: pointer; font-size: 0.85em; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.05em; }
+        .btn-main:hover:not(:disabled) { background: var(--stj-red-hover); transform: translateY(-1px); }
+        .btn-main:disabled { background: #e5e5e7; color: #a1a1a6; cursor: not-allowed; box-shadow: none; }
+
+        .scroll-content { padding: 30px 40px; overflow-y: auto; flex-grow: 1; }
+        .section { margin-bottom: 25px; }
+        label { display: block; font-weight: 700; margin-bottom: 8px; font-size: 0.7em; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; }
+        
+        input[type="text"], input[type="date"], select { width: 100%; padding: 12px 14px; background: #fff; border: 1px solid var(--border); border-radius: var(--radius-sm); box-sizing: border-box; font-size: 0.95em; transition: all 0.2s; appearance: none; }
+        input:focus, select:focus { border-color: var(--stj-red); outline: none; box-shadow: 0 0 0 3px var(--stj-red-alpha); }
+
+        .radio-group { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr;
+            background: #e5e5e7; 
+            padding: 2px; 
+            border-radius: 10px; 
+            border: 1px solid #d1d1d6; 
+            height: 44px; 
+            box-sizing: border-box;
+            width: fit-content;
+            min-width: 320px;
+        }
+        .radio-option { display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; border-radius: 8px; transition: all 0.2s; user-select: none; height: 100%; }
+        .radio-option input { position: absolute; opacity: 0; width: 0; height: 0; }
+        .radio-option span { font-weight: 600; font-size: 0.85em; color: var(--text-secondary); line-height: 1; z-index: 1; }
+        .radio-option:has(input:checked) { background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+        .radio-option:has(input:checked) span { color: var(--stj-red); }
+
+        .date-input-field { width: 220px !important; }
+
+        .select-wrapper { position: relative; }
+        .select-wrapper::after { content: '▼'; font-size: 0.7em; color: var(--text-secondary); position: absolute; right: 15px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+
+        .table-container { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; background: #f5f5f7; padding: 12px 16px; font-size: 0.6em; color: var(--text-secondary); text-transform: uppercase; border-bottom: 1px solid var(--border); }
+        .name-row-input { border: none; border-left: 3px solid transparent; padding: 14px 16px; width: 100%; box-sizing: border-box; background: transparent; font-size: 0.95em; }
+        .name-row-input:focus { outline: none; border-left-color: var(--stj-red); background: var(--stj-red-alpha); }
+        tr:first-child td { background: #fff9f0; }
+
+        #loadingOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); z-index: 1000; flex-direction: column; align-items: center; justify-content: center; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--stj-red); border-radius: 50%; animation: spin 0.8s infinite; margin-bottom: 20px; }
+        #progressText { font-weight: 800; color: var(--text-main); font-size: 1.1em; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div id="loadingOverlay">
+    <div class="spinner"></div>
+    <div id="progressText">Starting Generation...</div>
+</div>
+
+<div class="app-card">
+    <div class="header">
+        <div class="header-top">
+            <img src="logo.svg" alt="St John Logo" class="logo">
+            <div class="header-actions">
+                <div class="count-pill">Count: <span id="countDisplay">0</span></div>
+                <button class="btn-main" id="goBtn" disabled>Generate</button>
+            </div>
+        </div>
+        <h1>Grand Prior's & Commissioner's Award Certificate Generator</h1>
+    </div>
+
+    <div class="scroll-content">
+        <div class="section">
+            <label>Award Type</label>
+            <div class="radio-group">
+                <label class="radio-option">
+                    <input type="radio" name="awardType" value="gp.pdf" checked>
+                    <span>Grand Prior's</span>
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="awardType" value="cm.pdf">
+                    <span>Commissioner's</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="section" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+            <div>
+                <label>Badge</label>
+                <div class="select-wrapper">
+                    <select id="badgeSelect">
+                        <option value="" disabled selected>Select a badge...</option>
+                        <option>Adventure</option><option>Anatomy</option><option>Animal Care</option>
+                        <option>ANZAC</option><option>Casualty Simulation</option><option>Communications</option>
+                        <option>Cultural Awareness</option><option>Emergency Management</option><option>Eye Health</option>
+                        <option>First Aid Competitions</option><option>First Nations Australians</option><option>Food and Nutrition</option>
+                        <option>Healthcare</option><option>Humanitarian</option><option>International Friendship</option>
+                        <option>Knowledge of the Order</option><option>Language</option><option>Leadership</option>
+                        <option>Project Management</option><option>Road Safety</option><option>Situational First Aid</option>
+                        <option>Sports</option><option>Technology</option><option>Welcome to St John</option><option>Wellbeing</option>
+                        <option value="Other">Other (Type manually...)</option>
+                    </select>
+                </div>
+                <input type="text" id="otherBadge" placeholder="Enter badge name..." style="display: none; margin-top: 12px;">
+            </div>
+            <div><label>Division</label><input type="text" id="division" placeholder="My Division" class="v-check"></div>
+        </div>
+
+        <div class="section">
+            <label>Date</label>
+            <input type="date" id="dateInput" class="date-input-field v-check">
+        </div>
+
+        <div class="section">
+            <label>Member Names</label>
+            <div class="table-container">
+                <table id="batchTable">
+                    <thead><tr><th style="width: 50px; text-align: center;">#</th><th>Full Name</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const { PDFDocument } = PDFLib;
+    const tBody = document.querySelector('#batchTable tbody');
+    const badgeSelect = document.getElementById('badgeSelect');
+    const otherBadge = document.getElementById('otherBadge');
+    const goBtn = document.getElementById('goBtn');
+    const dateInput = document.getElementById('dateInput');
+    const countDisplay = document.getElementById('countDisplay');
+
+    const MAX_NAMES = 500;
+    dateInput.valueAsDate = new Date();
+
+    createEmptyRow(true);
+
+    function getActiveCount() {
+        return Array.from(document.querySelectorAll('.name-row-input')).filter(i => i.value.trim() !== "").length;
+    }
+
+    function createEmptyRow(isTop = true) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td class="row-num" style="color: #aeaeb2; text-align: center; font-weight: 600; font-size: 0.8em;"></td><td><input type="text" class="name-row-input" placeholder="Type or paste names here..."></td>`;
+        if (isTop) tBody.prepend(tr); else tBody.appendChild(tr);
+        tr.querySelector('input').addEventListener('input', handleInputChange);
+        tr.querySelector('input').addEventListener('keydown', handleKeydown);
+        return tr;
+    }
+
+    function handleInputChange(e) {
+        const activeCount = getActiveCount();
+        if (activeCount >= MAX_NAMES && e.target.value.trim() !== "") {
+            e.target.value = e.target.value.slice(0, -1);
+            alert("Maximum limit of 500 names reached.");
+            return;
+        }
+        const rows = Array.from(tBody.querySelectorAll('tr'));
+        const idx = rows.indexOf(e.target.closest('tr'));
+        if (idx === 0 && e.target.value.trim() !== "" && rows.length < MAX_NAMES + 1) createEmptyRow(true);
+        if (idx !== 0 && e.target.value.trim() === "") e.target.closest('tr').remove();
+        validate();
+    }
+
+    function handleKeydown(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const rows = Array.from(tBody.querySelectorAll('tr'));
+            const idx = rows.indexOf(e.target.closest('tr'));
+            if (idx > 0) rows[idx - 1].querySelector('input').focus();
+        }
+    }
+
+    badgeSelect.addEventListener('change', () => {
+        otherBadge.style.display = badgeSelect.value === 'Other' ? 'block' : 'none';
+        if (badgeSelect.value !== 'Other') otherBadge.value = "";
+        validate();
+    });
+
+    function validate() {
+        const names = getActiveCount();
+        const badgeValid = badgeSelect.value && (badgeSelect.value !== 'Other' || otherBadge.value.trim() !== "");
+        countDisplay.innerText = names;
+        document.querySelectorAll('.row-num').forEach((td, i) => td.innerText = i + 1);
+        goBtn.disabled = !(badgeValid && document.getElementById('division').value.trim() !== "" && names > 0);
+    }
+
+    tBody.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const lines = e.clipboardData.getData('text').split(/\r?\n/).map(l => l.trim()).filter(l => l !== "");
+        const currentActive = getActiveCount();
+        const remaining = MAX_NAMES - currentActive;
+        if (remaining <= 0) { alert("Limit reached."); return; }
+        const toAdd = lines.slice(0, remaining);
+        toAdd.reverse().forEach(name => {
+            createEmptyRow(true);
+            document.querySelectorAll('.name-row-input')[1].value = name;
+        });
+        if (lines.length > toAdd.length) alert(`Limit of 500 reached. ${lines.length - toAdd.length} names skipped.`);
+        validate();
+    });
+
+    const wait = () => new Promise(res => setTimeout(res, 10));
+
+    async function generate() {
+        document.getElementById('loadingOverlay').style.display = 'flex';
+        await wait();
+        try {
+            // 1. DETERMINE CORRECT PDF TEMPLATE
+            const selectedTemplate = document.querySelector('input[name="awardType"]:checked').value;
+            const response = await fetch(selectedTemplate);
+            if (!response.ok) throw new Error(`Could not find the template: ${selectedTemplate}`);
+            const bytes = await response.arrayBuffer();
+
+            const names = Array.from(document.querySelectorAll('.name-row-input')).map(i => i.value.trim()).filter(v => v !== "");
+            const master = await PDFDocument.create();
+            const badgeRaw = badgeSelect.value === 'Other' ? otherBadge.value.trim() : badgeSelect.value;
+            const divValRaw = document.getElementById('division').value.trim();
+            const dateObj = new Date(dateInput.value);
+            const year = dateObj.getFullYear();
+            
+            const formatDate = (val) => {
+                const d = new Date(val);
+                const s = (n) => (n > 3 && n < 21) ? 'th' : ['th', 'st', 'nd', 'rd', 'th'][Math.min(n % 10, 4)];
+                return d.toLocaleDateString('en-AU', { weekday: 'long' }) + `, ${d.getDate()}${s(d.getDate())} ` + d.toLocaleDateString('en-AU', { month: 'long', year: 'numeric' });
+            };
+            const dateStr = formatDate(dateInput.value);
+
+            for (let i = 0; i < names.length; i++) {
+                document.getElementById('progressText').innerText = `Processing ${i + 1} of ${names.length}...`;
+                if (i % 5 === 0) await wait();
+                const doc = await PDFDocument.load(bytes);
+                const form = doc.getForm();
+                try {
+                    form.getTextField('name').setText(names[i]);
+                    form.getTextField('bname').setText(badgeRaw);
+                    form.getTextField('division').setText(divValRaw);
+                    form.getTextField('date').setText(dateStr);
+                } catch (e) {}
+                form.flatten();
+                const [page] = await master.copyPages(doc, [0]);
+                master.addPage(page);
+            }
+            const out = await master.save({ useObjectStreams: true });
+            const sanitize = (str) => str.toLowerCase().replace(/\s+/g, '_');
+            const fileName = `${year}_${sanitize(divValRaw)}_${sanitize(badgeRaw)}_certificates.pdf`;
+            download(out, fileName, "application/pdf");
+        } catch (err) { alert(err.message); } finally { document.getElementById('loadingOverlay').style.display = 'none'; }
+    }
+    goBtn.onclick = generate;
+    document.querySelectorAll('.v-check, #otherBadge').forEach(i => i.addEventListener('input', validate));
+</script>
+</body>
+</html>
