@@ -65,6 +65,9 @@
 
         #customUploadSection { display: none; padding: 15px; background: var(--stj-red-alpha); border-radius: var(--radius-sm); border: 1px dashed var(--stj-red); margin-top: -10px; margin-bottom: 20px; }
 
+        /* Constrained Date Field */
+        .date-input-field { width: 220px !important; }
+
         .table-container { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; margin-top: 10px; }
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; background: #f5f5f7; padding: 12px 16px; font-size: 0.6em; color: var(--text-secondary); text-transform: uppercase; border-bottom: 1px solid var(--border); }
@@ -134,7 +137,12 @@
             <div><label>Division</label><input type="text" id="division" placeholder="My Division" class="v-check"></div>
         </div>
 
-        <div class="section"><label>Date</label><input type="date" id="dateInput" class="date-input-field v-check"></div>
+        <div class="section">
+            <label>Date</label>
+            <div style="width: fit-content;">
+                <input type="date" id="dateInput" class="date-input-field v-check">
+            </div>
+        </div>
 
         <div class="section">
             <label>Member Names</label>
@@ -182,18 +190,31 @@
         if (isTop) tBody.prepend(tr); else tBody.appendChild(tr);
         tr.querySelector('input').addEventListener('input', handleInputChange);
         tr.querySelector('input').addEventListener('keydown', handleKeydown);
+        return tr;
     }
 
     function handleInputChange(e) {
+        const rows = Array.from(tBody.querySelectorAll('tr'));
+        const idx = rows.indexOf(e.target.closest('tr'));
         const activeCount = getActiveCount();
+
+        // 1. Alert if user exceeds limit
         if (activeCount > MAX_NAMES && e.target.value.trim() !== "") {
             e.target.value = e.target.value.slice(0, -1);
-            alert(`Maximum limit of ${MAX_NAMES} names reached for stability.`);
+            alert(`Maximum limit of ${MAX_NAMES} names reached.`);
             return;
         }
-        if (Array.from(tBody.querySelectorAll('tr'))[0].querySelector('input').value !== "" && tBody.querySelectorAll('tr').length < MAX_NAMES) {
+
+        // 2. New row creation
+        if (rows[0].querySelector('input').value !== "" && rows.length < MAX_NAMES) {
             createEmptyRow(true);
         }
+
+        // 3. Row deletion (Restored Logic)
+        if (idx !== 0 && e.target.value.trim() === "") {
+            e.target.closest('tr').remove();
+        }
+
         validate();
     }
 
@@ -226,16 +247,15 @@
         e.preventDefault();
         const lines = e.clipboardData.getData('text').split(/\r?\n/).map(l => l.trim()).filter(l => l !== "");
         const currentActive = getActiveCount();
-        const toAdd = lines.slice(0, MAX_NAMES - currentActive);
+        const remaining = MAX_NAMES - currentActive;
+        const toAdd = lines.slice(0, remaining);
+        
         toAdd.reverse().forEach(name => {
             const tr = createEmptyRow(true);
             if(tr) tr.querySelector('.name-row-input').value = name;
-            else {
-                const inputs = document.querySelectorAll('.name-row-input');
-                for(let input of inputs) { if(input.value === "") { input.value = name; break; } }
-            }
         });
-        if (lines.length > toAdd.length) alert(`Maximum limit of ${MAX_NAMES} reached. ${lines.length - toAdd.length} names were skipped.`);
+        
+        if (lines.length > remaining) alert(`Limit reached. ${lines.length - remaining} names skipped.`);
         validate();
     });
 
@@ -290,10 +310,10 @@
                     const drawCentred = (text, y, font, size) => {
                         const tw = font.widthOfTextAtSize(text, size);
                         const x = (pageSize.width / 2) - (tw / 2);
-                        page.drawText(text, { x, y: y - 5, size, font, color: PDFLib.rgb(0, 0, 0) });
+                        // OFFSET CALCULATION: Shifted down a total of 15pt from original acrobat inputs
+                        page.drawText(text, { x, y: y - 15, size, font, color: PDFLib.rgb(0, 0, 0) });
                     };
 
-                    // ALL SET TO fontRegular AS REQUESTED - SHIFTED DOWN 5 PT
                     drawCentred(names[i], 463.323, fontRegular, 23);
                     drawCentred(divValRaw, 385.905, fontRegular, 23);
                     drawCentred(badgeRaw, 291.233, fontRegular, 23);
