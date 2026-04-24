@@ -189,7 +189,6 @@
         if (isTop) tBody.prepend(tr); else tBody.appendChild(tr);
         tr.querySelector('input').addEventListener('input', handleInputChange);
         tr.querySelector('input').addEventListener('keydown', handleKeydown);
-        return tr;
     }
 
     function handleInputChange(e) {
@@ -306,14 +305,16 @@
                     const drawCentred = (text, y, font, size) => {
                         const tw = font.widthOfTextAtSize(text, size);
                         const x = (pageSize.width / 2) - (tw / 2);
-                        // TOTAL OFFSET: 30pt downward shift from original coordinates
-                        page.drawText(text, { x, y: y - 30, size, font, color: PDFLib.rgb(0, 0, 0) });
+                        page.drawText(text, { x, y: y - 25, size, font, color: PDFLib.rgb(0, 0, 0) });
                     };
 
                     drawCentred(names[i], 463.323, fontRegular, 23);
                     drawCentred(divValRaw, 385.905, fontRegular, 23);
                     drawCentred(badgeRaw, 291.233, fontRegular, 23);
-                    drawCentred(dateStr, 204.778, fontRegular, 23);
+                    
+                    // DATE FONT SIZE SET TO 21PT AS REQUESTED
+                    drawCentred(dateStr, 204.778, fontRegular, 21);
+                    
                 } else {
                     const doc = await PDFDocument.load(templateBytes);
                     const form = doc.getForm();
