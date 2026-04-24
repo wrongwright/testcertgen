@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>St John Certificate Generator</title>
+    <title>GP & CM Award Certificate Generator - St John NSW</title>
     
     <link rel="icon" type="image/svg+xml" href="icon.svg">
     <script src="pdf-lib.min.js"></script>
@@ -27,17 +27,24 @@
         .count-pill { background: var(--stj-red-alpha); color: var(--stj-red); padding: 8px 16px; border-radius: 20px; font-weight: 700; font-size: 0.75em; text-transform: uppercase; letter-spacing: 0.05em; }
         .btn-main { background: var(--stj-red); color: white; border: none; padding: 10px 24px; border-radius: var(--radius-sm); font-weight: 700; cursor: pointer; font-size: 0.85em; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.05em; box-shadow: 0 4px 10px rgba(207, 17, 38, 0.2); }
         .btn-main:hover:not(:disabled) { background: var(--stj-red-hover); transform: translateY(-1px); }
-        .btn-main:disabled { background: #e5e5e7; color: #a1a1a6; cursor: not-allowed; box-shadow: none; }
+        .btn-main:disabled { background: #e5e5e7; color: #a1a1a6; cursor: not-allowed; }
+
         .scroll-content { padding: 30px 40px; overflow-y: auto; flex-grow: 1; }
         .section { margin-bottom: 25px; }
-        label { display: block; font-weight: 700; margin-bottom: 8px; font-size: 0.7em; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; }
+        
+        /* 3. INCREASED HEADING SIZE */
+        label { display: block; font-weight: 700; margin-bottom: 10px; font-size: 0.85em; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; }
+        
         input[type="text"], input[type="date"], select, input[type="file"] { width: 100%; padding: 12px 14px; background: #fff; border: 1px solid var(--border); border-radius: var(--radius-sm); box-sizing: border-box; font-size: 0.95em; transition: all 0.2s; appearance: none; }
-        .radio-group { display: grid; grid-template-columns: 1fr 1fr 1.2fr; background: #e5e5e7; padding: 2px; border-radius: 10px; border: 1px solid #d1d1d6; height: 44px; box-sizing: border-box; width: fit-content; min-width: 480px; }
+        
+        /* 4. INCREASED RADIO TEXT SIZE */
+        .radio-group { display: grid; grid-template-columns: 1fr 1fr 1.2fr; background: #e5e5e7; padding: 2px; border-radius: 10px; border: 1px solid #d1d1d6; height: 48px; box-sizing: border-box; width: fit-content; min-width: 520px; }
         .radio-option { display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; border-radius: 8px; transition: all 0.2s; user-select: none; height: 100%; }
         .radio-option input { position: absolute; opacity: 0; width: 0; height: 0; }
-        .radio-option span { font-weight: 600; font-size: 0.8em; color: var(--text-secondary); line-height: 1; z-index: 1; display: flex; align-items: center; height: 100%; text-align: center; }
+        .radio-option span { font-weight: 600; font-size: 0.95em; color: var(--text-secondary); line-height: 1; z-index: 1; display: flex; align-items: center; height: 100%; text-align: center; }
         .radio-option:has(input:checked) { background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
         .radio-option:has(input:checked) span { color: var(--stj-red); }
+
         #customUploadSection { display: none; padding: 15px; background: var(--stj-red-alpha); border-radius: var(--radius-sm); border: 1px dashed var(--stj-red); margin-top: -10px; margin-bottom: 20px; }
         .date-input-field { width: 220px !important; }
         .table-container { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; margin-top: 10px; }
@@ -48,7 +55,7 @@
         tr:first-child td { background: #fff9f0; }
         #loadingOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); z-index: 1000; flex-direction: column; align-items: center; justify-content: center; }
         .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--stj-red); border-radius: 50%; animation: spin 0.8s infinite; margin-bottom: 20px; }
-        #progressText { font-weight: 800; color: var(--text-main); font-size: 1.1em; }
+        #progressText { font-weight: 800; color: var(--text-main); font-size: 1.1em; text-align: center; padding: 0 20px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
@@ -73,7 +80,7 @@
 
     <div class="scroll-content">
         <div class="section">
-            <label>Award Type</label>
+            <label>Certificate Type</label>
             <div class="radio-group" id="typeGroup">
                 <label class="radio-option"><input type="radio" name="awardType" value="gp.pdf" checked><span>Grand Prior's</span></label>
                 <label class="radio-option"><input type="radio" name="awardType" value="cm.pdf"><span>Commissioner's</span></label>
@@ -117,32 +124,32 @@
 
 <script>
     const { PDFDocument, StandardFonts, TextAlignment } = PDFLib;
-    const tBody = document.querySelector('#batchTable tbody');
-    const badgeSelect = document.getElementById('badgeSelect'), otherBadge = document.getElementById('otherBadge');
+    const tBody = document.querySelector('#batchTable tbody'), badgeSelect = document.getElementById('badgeSelect'), otherBadge = document.getElementById('otherBadge');
     const typeGroup = document.getElementById('typeGroup'), customSection = document.getElementById('customUploadSection');
     const customFileInput = document.getElementById('customTemplateFile'), goBtn = document.getElementById('goBtn');
     const dateInput = document.getElementById('dateInput'), countDisplay = document.getElementById('countDisplay');
 
-    const MAX_NAMES = 300;
+    // 2. INCREASED LIMIT TO 1000
+    const MAX_NAMES = 1000;
+    const BATCH_SIZE = 100; // SAFETY: Split into downloads of 100 to prevent browser OOM crashes
     
-    // PERFORMANCE TECHNIQUE 1: Template Binary Cache
     const templateCache = { 'gp.pdf': null, 'cm.pdf': null };
 
-    // PERFORMANCE TECHNIQUE 2: Pre-fetching
     async function prefetchTemplates() {
         ['gp.pdf', 'cm.pdf'].forEach(async (file) => {
             try {
                 const resp = await fetch(file);
                 if (resp.ok) templateCache[file] = await resp.arrayBuffer();
-                console.log(`Pre-fetched: ${file}`);
-            } catch (e) { console.warn(`Prefetch failed for ${file}`); }
+            } catch (e) {}
         });
     }
 
-    // PERFORMANCE TECHNIQUE 4: LocalStorage Restore
     function restoreState() {
         if (localStorage.getItem('stj_division')) document.getElementById('division').value = localStorage.getItem('stj_division');
-        if (localStorage.getItem('stj_badge')) badgeSelect.value = localStorage.getItem('stj_badge');
+        if (localStorage.getItem('stj_badge')) {
+            badgeSelect.value = localStorage.getItem('stj_badge');
+            if (badgeSelect.value === 'Other') otherBadge.style.display = 'block';
+        }
         validate();
     }
 
@@ -161,6 +168,8 @@
         validate();
     });
 
+    customFileInput.addEventListener('change', validate);
+
     function getActiveCount() { return Array.from(document.querySelectorAll('.name-row-input')).filter(i => i.value.trim() !== "").length; }
 
     function createEmptyRow(isTop = true) {
@@ -169,16 +178,28 @@
         tr.innerHTML = `<td class="row-num" style="color: #aeaeb2; text-align: center; font-weight: 600; font-size: 0.8em;"></td><td><input type="text" class="name-row-input" placeholder="Enter name..."></td>`;
         if (isTop) tBody.prepend(tr); else tBody.appendChild(tr);
         tr.querySelector('input').addEventListener('input', handleInputChange);
+        tr.querySelector('input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const rows = Array.from(tBody.querySelectorAll('tr')), idx = rows.indexOf(e.target.closest('tr'));
+                if (idx > 0) rows[idx - 1].querySelector('input').focus();
+            }
+        });
         return tr;
     }
 
     function handleInputChange(e) {
         const rows = Array.from(tBody.querySelectorAll('tr')), idx = rows.indexOf(e.target.closest('tr'));
-        if (getActiveCount() > MAX_NAMES && e.target.value.trim() !== "") {
-            e.target.value = e.target.value.slice(0, -1);
-            alert(`Limit of ${MAX_NAMES} names reached.`);
+        const activeCount = getActiveCount();
+
+        // 1. POPUP RE-ADDED & REINFORCED
+        if (activeCount > MAX_NAMES) {
+            e.target.value = ""; 
+            alert(`Maximum limit of ${MAX_NAMES} names reached.`);
+            validate();
             return;
         }
+
         if (rows[0].querySelector('input').value !== "" && rows.length < MAX_NAMES) createEmptyRow(true);
         if (idx !== 0 && e.target.value.trim() === "") e.target.closest('tr').remove();
         validate();
@@ -186,8 +207,7 @@
 
     badgeSelect.addEventListener('change', () => {
         otherBadge.style.display = badgeSelect.value === 'Other' ? 'block' : 'none';
-        saveState();
-        validate();
+        saveState(); validate();
     });
 
     document.getElementById('division').addEventListener('input', saveState);
@@ -205,36 +225,34 @@
     tBody.addEventListener('paste', (e) => {
         e.preventDefault();
         const lines = e.clipboardData.getData('text').split(/\r?\n/).map(l => l.trim()).filter(l => l !== "");
-        const currentActive = getActiveCount(), toAdd = lines.slice(0, MAX_NAMES - currentActive);
-        toAdd.reverse().forEach(name => {
+        const currentActive = getActiveCount(), canAdd = MAX_NAMES - currentActive;
+        
+        lines.slice(0, canAdd).reverse().forEach(name => {
             const rows = tBody.querySelectorAll('tr'), topInput = rows[0].querySelector('input');
             if (topInput.value.trim() === "") topInput.value = name;
             else { const tr = createEmptyRow(true); if (tr) tr.querySelector('input').value = name; }
         });
+
+        if (lines.length > canAdd) alert(`Limit of ${MAX_NAMES} reached. ${lines.length - canAdd} names skipped.`);
         if (tBody.querySelectorAll('tr')[0].querySelector('input').value !== "" && tBody.querySelectorAll('tr').length < MAX_NAMES) createEmptyRow(true);
         validate();
     });
 
+    const wait = (ms = 10) => new Promise(res => setTimeout(res, ms));
+
     async function generate() {
+        const allNames = Array.from(document.querySelectorAll('.name-row-input')).map(i => i.value.trim()).filter(v => v !== "");
         document.getElementById('loadingOverlay').style.display = 'flex';
-        await new Promise(r => setTimeout(r, 10));
+        await wait(50);
+
         try {
             const selectedType = document.querySelector('input[name="awardType"]:checked').value;
             let templateBytes;
-            
-            // Check cache first for standard templates
             if (selectedType === 'custom') {
                 templateBytes = await customFileInput.files[0].arrayBuffer();
             } else {
                 templateBytes = templateCache[selectedType] || await (await fetch(selectedType)).arrayBuffer();
             }
-
-            const names = Array.from(document.querySelectorAll('.name-row-input')).map(i => i.value.trim()).filter(v => v !== "");
-            const master = await PDFDocument.create();
-            
-            // Memoize Fonts
-            const fontBold = await master.embedFont(StandardFonts.HelveticaBold);
-            const fontRegular = await master.embedFont(StandardFonts.Helvetica);
 
             const badgeRaw = badgeSelect.value === 'Other' ? otherBadge.value.trim() : badgeSelect.value;
             const divVal = document.getElementById('division').value.trim();
@@ -242,59 +260,71 @@
             const s = (n) => (n > 3 && n < 21) ? 'th' : ['th', 'st', 'nd', 'rd', 'th'][Math.min(n % 10, 4)];
             const dateStr = dateObj.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).replace(/\d+/, (d) => `${d}${s(d)}`);
 
-            let backgroundPage = null, pageSize = null;
-            if (selectedType === 'custom') {
-                const tempDoc = await PDFDocument.load(templateBytes);
-                const [copy] = await master.copyPages(tempDoc, [0]);
-                backgroundPage = await master.embedPage(copy);
-                pageSize = copy.getSize();
-            }
+            // BATCH PROCESSING LOGIC
+            for (let i = 0; i < allNames.length; i += BATCH_SIZE) {
+                const batch = allNames.slice(i, i + BATCH_SIZE);
+                const batchNum = (i / BATCH_SIZE) + 1;
+                const totalBatches = Math.ceil(allNames.length / BATCH_SIZE);
+                
+                const master = await PDFDocument.create();
+                const fontBold = await master.embedFont(StandardFonts.HelveticaBold);
+                const fontRegular = await master.embedFont(StandardFonts.Helvetica);
 
-            for (let i = 0; i < names.length; i++) {
-                document.getElementById('progressText').innerText = `Batch: ${i + 1} of ${names.length}...`;
-                if (i % 15 === 0) await new Promise(r => setTimeout(r, 1)); // Yield to UI thread
-
+                let backgroundPage = null, pageSize = null;
                 if (selectedType === 'custom') {
-                    const page = master.addPage([pageSize.width, pageSize.height]);
-                    page.drawPage(backgroundPage);
-                    const drawC = (text, y, font, size) => {
-                        const tw = font.widthOfTextAtSize(text, size);
-                        page.drawText(text, { x: (pageSize.width / 2) - (tw / 2), y: y - 25, size, font });
-                    };
-                    drawC(names[i], 463.323, fontRegular, 23);
-                    drawC(divVal, 385.905, fontRegular, 23);
-                    drawC(badgeRaw, 291.233, fontRegular, 23);
-                    drawC(dateStr, 204.778, fontRegular, 21);
-                } else {
-                    const doc = await PDFDocument.load(templateBytes);
-                    const form = doc.getForm();
-                    const fields = [{ id: 'name', val: names[i], f: fontBold, s: 23 }, { id: 'bname', val: badgeRaw, f: fontBold, s: 23 }, { id: 'division', val: divVal, f: fontRegular, s: 23 }, { id: 'date', val: dateStr, f: fontRegular, s: 23 }];
-                    fields.forEach(f => {
-                        try {
-                            const field = form.getTextField(f.id);
-                            field.setText(f.val);
-                            field.updateAppearances(f.f);
-                            field.setAlignment(TextAlignment.Center);
-                        } catch (e) {}
-                    });
-                    form.flatten();
-                    const [page] = await master.copyPages(doc, [0]);
-                    master.addPage(page);
+                    const tempDoc = await PDFDocument.load(templateBytes);
+                    const [copy] = await master.copyPages(tempDoc, [0]);
+                    backgroundPage = await master.embedPage(copy);
+                    pageSize = copy.getSize();
                 }
+
+                for (let j = 0; j < batch.length; j++) {
+                    const globalIdx = i + j + 1;
+                    document.getElementById('progressText').innerText = `Batch ${batchNum}/${totalBatches}\nProcessing certificate ${globalIdx} of ${allNames.length}...`;
+                    if (j % 10 === 0) await wait(1);
+
+                    if (selectedType === 'custom') {
+                        const page = master.addPage([pageSize.width, pageSize.height]);
+                        page.drawPage(backgroundPage);
+                        const drawC = (text, y, font, size) => {
+                            const tw = font.widthOfTextAtSize(text, size);
+                            page.drawText(text, { x: (pageSize.width / 2) - (tw / 2), y: y - 25, size, font });
+                        };
+                        drawC(batch[j], 463.323, fontRegular, 23);
+                        drawC(divVal, 385.905, fontRegular, 23);
+                        drawC(badgeRaw, 291.233, fontRegular, 23);
+                        drawC(dateStr, 204.778, fontRegular, 21);
+                    } else {
+                        const doc = await PDFDocument.load(templateBytes);
+                        const form = doc.getForm();
+                        const fields = [{ id: 'name', val: batch[j], f: fontBold }, { id: 'bname', val: badgeRaw, f: fontBold }, { id: 'division', val: divVal, f: fontRegular }, { id: 'date', val: dateStr, f: fontRegular }];
+                        fields.forEach(f => {
+                            try {
+                                const field = form.getTextField(f.id);
+                                field.setText(f.val);
+                                field.updateAppearances(f.f);
+                                field.setAlignment(TextAlignment.Center);
+                            } catch (e) {}
+                        });
+                        form.flatten();
+                        const [page] = await master.copyPages(doc, [0]);
+                        master.addPage(page);
+                    }
+                }
+
+                const out = await master.save();
+                const sanitize = (str) => str.toLowerCase().replace(/\s+/g, '_');
+                const partSuffix = totalBatches > 1 ? `_part${batchNum}` : "";
+                download(out, `${dateObj.getFullYear()}_${sanitize(divVal)}_${sanitize(badgeRaw)}${partSuffix}.pdf`, "application/pdf");
+                await wait(100); // Breathe between batches
             }
-            const out = await master.save();
-            download(out, `${dateObj.getFullYear()}_certificates.pdf`, "application/pdf");
         } catch (err) { alert(err.message); } finally { document.getElementById('loadingOverlay').style.display = 'none'; }
     }
     goBtn.onclick = generate;
 </script>
 
 <script>
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('sw.js').catch(err => console.log('SW failed', err));
-        });
-    }
+    if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(e => console.log(e)); }); }
 </script>
 </body>
 </html>
