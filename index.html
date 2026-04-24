@@ -65,7 +65,6 @@
 
         #customUploadSection { display: none; padding: 15px; background: var(--stj-red-alpha); border-radius: var(--radius-sm); border: 1px dashed var(--stj-red); margin-top: -10px; margin-bottom: 20px; }
 
-        /* Constrained Date Field */
         .date-input-field { width: 220px !important; }
 
         .table-container { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; margin-top: 10px; }
@@ -198,19 +197,16 @@
         const idx = rows.indexOf(e.target.closest('tr'));
         const activeCount = getActiveCount();
 
-        // 1. Alert if user exceeds limit
         if (activeCount > MAX_NAMES && e.target.value.trim() !== "") {
             e.target.value = e.target.value.slice(0, -1);
             alert(`Maximum limit of ${MAX_NAMES} names reached.`);
             return;
         }
 
-        // 2. New row creation
         if (rows[0].querySelector('input').value !== "" && rows.length < MAX_NAMES) {
             createEmptyRow(true);
         }
 
-        // 3. Row deletion (Restored Logic)
         if (idx !== 0 && e.target.value.trim() === "") {
             e.target.closest('tr').remove();
         }
@@ -310,8 +306,8 @@
                     const drawCentred = (text, y, font, size) => {
                         const tw = font.widthOfTextAtSize(text, size);
                         const x = (pageSize.width / 2) - (tw / 2);
-                        // OFFSET CALCULATION: Shifted down a total of 15pt from original acrobat inputs
-                        page.drawText(text, { x, y: y - 15, size, font, color: PDFLib.rgb(0, 0, 0) });
+                        // TOTAL OFFSET: 20pt downward shift from original coordinates
+                        page.drawText(text, { x, y: y - 20, size, font, color: PDFLib.rgb(0, 0, 0) });
                     };
 
                     drawCentred(names[i], 463.323, fontRegular, 23);
