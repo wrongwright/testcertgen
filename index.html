@@ -25,7 +25,7 @@
             --font-stack: 'SF Pro Display', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
         }
         
-        body { font-family: var(--font-stack); background: var(--bg); margin: 0; padding: 2vh 20px; display: flex; justify-content: center; height: 100vh; box-sizing: border-box; overflow: hidden; }
+        body { font-family: var(--font-stack); background: var(--bg); margin: 0; padding: 2vh 20px; display: flex; justify-content: center; height: 100vh; box-sizing: border-box; overflow: hidden; -webkit-font-smoothing: antialiased; }
         
         .app-card { 
             background: var(--panel-bg); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px); border-radius: var(--radius); 
@@ -41,7 +41,7 @@
         .header-actions { display: flex; align-items: center; gap: 15px; }
         .count-pill { background: var(--stj-red-alpha); color: var(--stj-red); padding: 8px 16px; border-radius: 20px; font-weight: 700; font-size: 0.75em; text-transform: uppercase; letter-spacing: 0.05em; }
 
-        .btn-main { background: var(--stj-red); color: white; border: none; padding: 10px 24px; border-radius: var(--radius-sm); font-weight: 700; cursor: pointer; font-size: 0.85em; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.05em; }
+        .btn-main { background: var(--stj-red); color: white; border: none; padding: 10px 24px; border-radius: var(--radius-sm); font-weight: 700; cursor: pointer; font-size: 0.85em; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.05em; box-shadow: 0 4px 10px rgba(207, 17, 38, 0.2); }
         .btn-main:hover:not(:disabled) { background: var(--stj-red-hover); transform: translateY(-1px); }
         .btn-main:disabled { background: #e5e5e7; color: #a1a1a6; cursor: not-allowed; box-shadow: none; }
 
@@ -49,12 +49,12 @@
         .section { margin-bottom: 25px; }
         label { display: block; font-weight: 700; margin-bottom: 8px; font-size: 0.7em; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; }
         
-        input[type="text"], input[type="date"], select { width: 100%; padding: 12px 14px; background: #fff; border: 1px solid var(--border); border-radius: var(--radius-sm); box-sizing: border-box; font-size: 0.95em; transition: all 0.2s; appearance: none; }
+        input[type="text"], input[type="date"], select, input[type="file"] { width: 100%; padding: 12px 14px; background: #fff; border: 1px solid var(--border); border-radius: var(--radius-sm); box-sizing: border-box; font-size: 0.95em; transition: all 0.2s; appearance: none; }
         input:focus, select:focus { border-color: var(--stj-red); outline: none; box-shadow: 0 0 0 3px var(--stj-red-alpha); }
 
         .radio-group { 
             display: grid; 
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1.2fr;
             background: #e5e5e7; 
             padding: 2px; 
             border-radius: 10px; 
@@ -62,18 +62,16 @@
             height: 44px; 
             box-sizing: border-box;
             width: fit-content;
-            min-width: 320px;
+            min-width: 480px;
         }
         .radio-option { display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; border-radius: 8px; transition: all 0.2s; user-select: none; height: 100%; }
         .radio-option input { position: absolute; opacity: 0; width: 0; height: 0; }
-        .radio-option span { font-weight: 600; font-size: 0.85em; color: var(--text-secondary); line-height: 1; z-index: 1; }
+        .radio-option span { font-weight: 600; font-size: 0.8em; color: var(--text-secondary); line-height: 1; z-index: 1; display: flex; align-items: center; height: 100%; text-align: center; }
         .radio-option:has(input:checked) { background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
         .radio-option:has(input:checked) span { color: var(--stj-red); }
 
-        .date-input-field { width: 220px !important; }
-
-        .select-wrapper { position: relative; }
-        .select-wrapper::after { content: '▼'; font-size: 0.7em; color: var(--text-secondary); position: absolute; right: 15px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+        /* Custom Template Section Styling */
+        #customUploadSection { display: none; padding: 15px; background: var(--stj-red-alpha); border-radius: var(--radius-sm); border: 1px dashed var(--stj-red); margin-top: -10px; margin-bottom: 20px; }
 
         .table-container { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; margin-top: 10px; }
         table { width: 100%; border-collapse: collapse; }
@@ -110,10 +108,25 @@
     <div class="scroll-content">
         <div class="section">
             <label>Award Type</label>
-            <div class="radio-group">
-                <label class="radio-option"><input type="radio" name="awardType" value="gp.pdf" checked><span>Grand Prior's</span></label>
-                <label class="radio-option"><input type="radio" name="awardType" value="cm.pdf"><span>Commissioner's</span></label>
+            <div class="radio-group" id="typeGroup">
+                <label class="radio-option">
+                    <input type="radio" name="awardType" value="gp.pdf" checked>
+                    <span>Grand Prior's</span>
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="awardType" value="cm.pdf">
+                    <span>Commissioner's</span>
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="awardType" value="custom">
+                    <span>Custom (Signed Template)</span>
+                </label>
             </div>
+        </div>
+
+        <div id="customUploadSection">
+            <label style="color: var(--stj-red);">Upload Pre-Signed PDF Template</label>
+            <input type="file" id="customTemplateFile" accept=".pdf">
         </div>
 
         <div class="section" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
@@ -157,39 +170,64 @@
     const tBody = document.querySelector('#batchTable tbody');
     const badgeSelect = document.getElementById('badgeSelect');
     const otherBadge = document.getElementById('otherBadge');
+    const typeGroup = document.getElementById('typeGroup');
+    const customSection = document.getElementById('customUploadSection');
+    const customFileInput = document.getElementById('customTemplateFile');
     const goBtn = document.getElementById('goBtn');
     const dateInput = document.getElementById('dateInput');
     const countDisplay = document.getElementById('countDisplay');
 
-    // REDUCED LIMIT FOR SAFARI STABILITY
     const MAX_NAMES = 300; 
     dateInput.valueAsDate = new Date();
+
     createEmptyRow(true);
+
+    // Toggle Custom Upload Visibility
+    typeGroup.addEventListener('change', (e) => {
+        customSection.style.display = e.target.value === 'custom' ? 'block' : 'none';
+        validate();
+    });
+
+    customFileInput.addEventListener('change', validate);
 
     function getActiveCount() {
         return Array.from(document.querySelectorAll('.name-row-input')).filter(i => i.value.trim() !== "").length;
     }
 
     function createEmptyRow(isTop = true) {
+        if (tBody.querySelectorAll('tr').length >= MAX_NAMES) return;
         const tr = document.createElement('tr');
         tr.innerHTML = `<td class="row-num" style="color: #aeaeb2; text-align: center; font-weight: 600; font-size: 0.8em;"></td><td><input type="text" class="name-row-input" placeholder="Enter name..."></td>`;
         if (isTop) tBody.prepend(tr); else tBody.appendChild(tr);
         tr.querySelector('input').addEventListener('input', handleInputChange);
+        tr.querySelector('input').addEventListener('keydown', handleKeydown);
     }
 
     function handleInputChange(e) {
         const activeCount = getActiveCount();
-        if (activeCount >= MAX_NAMES && e.target.value.trim() !== "") {
+        if (activeCount > MAX_NAMES && e.target.value.trim() !== "") {
             e.target.value = e.target.value.slice(0, -1);
-            alert(`Maximum limit of ${MAX_NAMES} names reached for stability.`);
+            alert(`Limit of ${MAX_NAMES} reached.`);
             return;
         }
-        if (Array.from(tBody.querySelectorAll('tr'))[0].querySelector('input').value !== "") createEmptyRow(true);
+        if (Array.from(tBody.querySelectorAll('tr'))[0].querySelector('input').value !== "") {
+            createEmptyRow(true);
+        }
         validate();
+    }
+
+    function handleKeydown(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const rows = Array.from(tBody.querySelectorAll('tr'));
+            const idx = rows.indexOf(e.target.closest('tr'));
+            if (idx > 0) rows[idx - 1].querySelector('input').focus();
+        }
     }
 
     badgeSelect.addEventListener('change', () => {
         otherBadge.style.display = badgeSelect.value === 'Other' ? 'block' : 'none';
+        if (badgeSelect.value !== 'Other') otherBadge.value = "";
         validate();
     });
 
@@ -197,8 +235,12 @@
         const names = getActiveCount();
         countDisplay.innerText = names;
         document.querySelectorAll('.row-num').forEach((td, i) => td.innerText = i + 1);
+        
+        const type = document.querySelector('input[name="awardType"]:checked').value;
         const badgeValid = badgeSelect.value && (badgeSelect.value !== 'Other' || otherBadge.value.trim() !== "");
-        goBtn.disabled = !(names > 0 && badgeValid && document.getElementById('division').value.trim() !== "");
+        const customFileValid = type !== 'custom' || customFileInput.files.length > 0;
+        
+        goBtn.disabled = !(names > 0 && badgeValid && document.getElementById('division').value.trim() !== "" && customFileValid);
     }
 
     tBody.addEventListener('paste', (e) => {
@@ -210,63 +252,105 @@
             createEmptyRow(true);
             document.querySelectorAll('.name-row-input')[1].value = name;
         });
-        if (lines.length > toAdd.length) alert(`Limit reached. ${lines.length - toAdd.length} names skipped.`);
         validate();
     });
 
+    const wait = () => new Promise(res => setTimeout(res, 10));
+
     async function generate() {
         document.getElementById('loadingOverlay').style.display = 'flex';
-        await new Promise(r => setTimeout(r, 100));
+        await wait();
         try {
-            const selected = document.querySelector('input[name="awardType"]:checked').value;
-            const response = await fetch(selected);
-            const templateBytes = await response.arrayBuffer();
+            const selectedType = document.querySelector('input[name="awardType"]:checked').value;
+            let templateBytes;
+
+            if (selectedType === 'custom') {
+                templateBytes = await customFileInput.files[0].arrayBuffer();
+            } else {
+                const response = await fetch(selectedType);
+                templateBytes = await response.arrayBuffer();
+            }
 
             const names = Array.from(document.querySelectorAll('.name-row-input')).map(i => i.value.trim()).filter(v => v !== "");
             const master = await PDFDocument.create();
-            
             const fontBold = await master.embedFont(StandardFonts.HelveticaBold);
             const fontRegular = await master.embedFont(StandardFonts.Helvetica);
 
-            const badge = badgeSelect.value === 'Other' ? otherBadge.value.trim() : badgeSelect.value;
-            const divVal = document.getElementById('division').value.trim();
+            const badgeRaw = badgeSelect.value === 'Other' ? otherBadge.value.trim() : badgeSelect.value;
+            const divValRaw = document.getElementById('division').value.trim();
             const dateObj = new Date(dateInput.value);
-            const s = (n) => (n > 3 && n < 21) ? 'th' : ['th', 'st', 'nd', 'rd', 'th'][Math.min(n % 10, 4)];
-            const dateStr = dateObj.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).replace(/\d+/, (d) => `${d}${s(d)}`);
+            
+            const formatDate = (val) => {
+                const d = new Date(val);
+                const s = (n) => (n > 3 && n < 21) ? 'th' : ['th', 'st', 'nd', 'rd', 'th'][Math.min(n % 10, 4)];
+                return d.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).replace(/\d+/, (day) => `${day}${s(day)}`);
+            };
+            const dateStr = formatDate(dateInput.value);
+
+            // OPTIMIZATION: If Custom, embed template once as XObject
+            let backgroundPage = null;
+            let pageSize = null;
+            if (selectedType === 'custom') {
+                const tempDoc = await PDFDocument.load(templateBytes);
+                const [copy] = await master.copyPages(tempDoc, [0]);
+                backgroundPage = await master.embedPage(copy);
+                pageSize = copy.getSize();
+            }
 
             for (let i = 0; i < names.length; i++) {
                 document.getElementById('progressText').innerText = `Creating ${i + 1} of ${names.length}...`;
-                const srcDoc = await PDFDocument.load(templateBytes);
-                const form = srcDoc.getForm();
+                if (i % 5 === 0) await wait();
+                
+                if (selectedType === 'custom') {
+                    // DRAWING ENGINE (No Form Fields)
+                    const page = master.addPage([pageSize.width, pageSize.height]);
+                    page.drawPage(backgroundPage);
 
-                const mapping = [
-                    { id: 'name', val: names[i], font: fontBold },
-                    { id: 'bname', val: badge, font: fontBold },
-                    { id: 'division', val: divVal, font: fontRegular },
-                    { id: 'date', val: dateStr, font: fontRegular }
-                ];
+                    const drawCentred = (text, y, font, size) => {
+                        const tw = font.widthOfTextAtSize(text, size);
+                        const x = (pageSize.width / 2) - (tw / 2); // Center on page
+                        page.drawText(text, { x, y, size, font, color: PDFLib.rgb(0, 0, 0) });
+                    };
 
-                mapping.forEach(f => {
-                    try {
-                        const field = form.getTextField(f.id);
-                        field.setText(f.val);
-                        field.updateAppearances(f.font);
-                        field.setAlignment(TextAlignment.Center);
-                    } catch (e) {}
-                });
+                    // Acrobat Coordinates Translation (Standard Acrobat Top Property = Distance from Bottom)
+                    drawCentred(names[i], 463.323, fontBold, 23);
+                    drawCentred(divValRaw, 385.905, fontRegular, 23);
+                    drawCentred(badgeRaw, 291.233, fontBold, 23);
+                    drawCentred(dateStr, 204.778, fontRegular, 23);
 
-                form.flatten();
-                const [page] = await master.copyPages(srcDoc, [0]);
-                master.addPage(page);
+                } else {
+                    // FORM ENGINE (GP/CM Templates)
+                    const doc = await PDFDocument.load(templateBytes);
+                    const form = doc.getForm();
+                    const mapping = [
+                        { id: 'name', val: names[i], font: fontBold },
+                        { id: 'bname', val: badgeRaw, font: fontBold },
+                        { id: 'division', val: divValRaw, font: fontRegular },
+                        { id: 'date', val: dateStr, font: fontRegular }
+                    ];
+                    mapping.forEach(f => {
+                        try {
+                            const field = form.getTextField(f.id);
+                            field.setText(f.val);
+                            field.updateAppearances(f.font);
+                            field.setAlignment(TextAlignment.Center);
+                        } catch (e) {}
+                    });
+                    form.flatten();
+                    const [page] = await master.copyPages(doc, [0]);
+                    master.addPage(page);
+                }
             }
 
             const out = await master.save();
             const sanitize = (str) => str.toLowerCase().replace(/\s+/g, '_');
-            const fileName = `${dateObj.getFullYear()}_${sanitize(divVal)}_${sanitize(badge)}_certificates.pdf`;
+            const fileName = `${dateObj.getFullYear()}_${sanitize(divValRaw)}_${sanitize(badgeRaw)}_certificates.pdf`;
             download(out, fileName, "application/pdf");
+
         } catch (err) { alert(err.message); } finally { document.getElementById('loadingOverlay').style.display = 'none'; }
     }
     goBtn.onclick = generate;
+    document.querySelectorAll('.v-check, #division').forEach(i => i.addEventListener('input', validate));
 </script>
 </body>
 </html>
