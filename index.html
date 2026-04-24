@@ -55,14 +55,7 @@
         .radio-group { 
             display: grid; 
             grid-template-columns: 1fr 1fr 1.2fr;
-            background: #e5e5e7; 
-            padding: 2px; 
-            border-radius: 10px; 
-            border: 1px solid #d1d1d6; 
-            height: 44px; 
-            box-sizing: border-box;
-            width: fit-content;
-            min-width: 480px;
+            background: #e5e5e7; padding: 2px; border-radius: 10px; border: 1px solid #d1d1d6; height: 44px; box-sizing: border-box; width: fit-content; min-width: 480px;
         }
         .radio-option { display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; border-radius: 8px; transition: all 0.2s; user-select: none; height: 100%; }
         .radio-option input { position: absolute; opacity: 0; width: 0; height: 0; }
@@ -70,7 +63,6 @@
         .radio-option:has(input:checked) { background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
         .radio-option:has(input:checked) span { color: var(--stj-red); }
 
-        /* Custom Template Section Styling */
         #customUploadSection { display: none; padding: 15px; background: var(--stj-red-alpha); border-radius: var(--radius-sm); border: 1px dashed var(--stj-red); margin-top: -10px; margin-bottom: 20px; }
 
         .table-container { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; margin-top: 10px; }
@@ -109,18 +101,9 @@
         <div class="section">
             <label>Award Type</label>
             <div class="radio-group" id="typeGroup">
-                <label class="radio-option">
-                    <input type="radio" name="awardType" value="gp.pdf" checked>
-                    <span>Grand Prior's</span>
-                </label>
-                <label class="radio-option">
-                    <input type="radio" name="awardType" value="cm.pdf">
-                    <span>Commissioner's</span>
-                </label>
-                <label class="radio-option">
-                    <input type="radio" name="awardType" value="custom">
-                    <span>Custom (Signed Template)</span>
-                </label>
+                <label class="radio-option"><input type="radio" name="awardType" value="gp.pdf" checked><span>Grand Prior's</span></label>
+                <label class="radio-option"><input type="radio" name="awardType" value="cm.pdf"><span>Commissioner's</span></label>
+                <label class="radio-option"><input type="radio" name="awardType" value="custom"><span>Custom (Signed Template)</span></label>
             </div>
         </div>
 
@@ -179,10 +162,8 @@
 
     const MAX_NAMES = 300; 
     dateInput.valueAsDate = new Date();
-
     createEmptyRow(true);
 
-    // Toggle Custom Upload Visibility
     typeGroup.addEventListener('change', (e) => {
         customSection.style.display = e.target.value === 'custom' ? 'block' : 'none';
         validate();
@@ -207,10 +188,10 @@
         const activeCount = getActiveCount();
         if (activeCount > MAX_NAMES && e.target.value.trim() !== "") {
             e.target.value = e.target.value.slice(0, -1);
-            alert(`Limit of ${MAX_NAMES} reached.`);
+            alert(`Maximum limit of ${MAX_NAMES} names reached for stability.`);
             return;
         }
-        if (Array.from(tBody.querySelectorAll('tr'))[0].querySelector('input').value !== "") {
+        if (Array.from(tBody.querySelectorAll('tr'))[0].querySelector('input').value !== "" && tBody.querySelectorAll('tr').length < MAX_NAMES) {
             createEmptyRow(true);
         }
         validate();
@@ -235,11 +216,9 @@
         const names = getActiveCount();
         countDisplay.innerText = names;
         document.querySelectorAll('.row-num').forEach((td, i) => td.innerText = i + 1);
-        
         const type = document.querySelector('input[name="awardType"]:checked').value;
         const badgeValid = badgeSelect.value && (badgeSelect.value !== 'Other' || otherBadge.value.trim() !== "");
         const customFileValid = type !== 'custom' || customFileInput.files.length > 0;
-        
         goBtn.disabled = !(names > 0 && badgeValid && document.getElementById('division').value.trim() !== "" && customFileValid);
     }
 
@@ -249,9 +228,14 @@
         const currentActive = getActiveCount();
         const toAdd = lines.slice(0, MAX_NAMES - currentActive);
         toAdd.reverse().forEach(name => {
-            createEmptyRow(true);
-            document.querySelectorAll('.name-row-input')[1].value = name;
+            const tr = createEmptyRow(true);
+            if(tr) tr.querySelector('.name-row-input').value = name;
+            else {
+                const inputs = document.querySelectorAll('.name-row-input');
+                for(let input of inputs) { if(input.value === "") { input.value = name; break; } }
+            }
         });
+        if (lines.length > toAdd.length) alert(`Maximum limit of ${MAX_NAMES} reached. ${lines.length - toAdd.length} names were skipped.`);
         validate();
     });
 
@@ -263,7 +247,6 @@
         try {
             const selectedType = document.querySelector('input[name="awardType"]:checked').value;
             let templateBytes;
-
             if (selectedType === 'custom') {
                 templateBytes = await customFileInput.files[0].arrayBuffer();
             } else {
@@ -287,7 +270,6 @@
             };
             const dateStr = formatDate(dateInput.value);
 
-            // OPTIMIZATION: If Custom, embed template once as XObject
             let backgroundPage = null;
             let pageSize = null;
             if (selectedType === 'custom') {
@@ -302,24 +284,21 @@
                 if (i % 5 === 0) await wait();
                 
                 if (selectedType === 'custom') {
-                    // DRAWING ENGINE (No Form Fields)
                     const page = master.addPage([pageSize.width, pageSize.height]);
                     page.drawPage(backgroundPage);
 
                     const drawCentred = (text, y, font, size) => {
                         const tw = font.widthOfTextAtSize(text, size);
-                        const x = (pageSize.width / 2) - (tw / 2); // Center on page
-                        page.drawText(text, { x, y, size, font, color: PDFLib.rgb(0, 0, 0) });
+                        const x = (pageSize.width / 2) - (tw / 2);
+                        page.drawText(text, { x, y: y - 5, size, font, color: PDFLib.rgb(0, 0, 0) });
                     };
 
-                    // Acrobat Coordinates Translation (Standard Acrobat Top Property = Distance from Bottom)
-                    drawCentred(names[i], 463.323, fontBold, 23);
+                    // ALL SET TO fontRegular AS REQUESTED - SHIFTED DOWN 5 PT
+                    drawCentred(names[i], 463.323, fontRegular, 23);
                     drawCentred(divValRaw, 385.905, fontRegular, 23);
-                    drawCentred(badgeRaw, 291.233, fontBold, 23);
+                    drawCentred(badgeRaw, 291.233, fontRegular, 23);
                     drawCentred(dateStr, 204.778, fontRegular, 23);
-
                 } else {
-                    // FORM ENGINE (GP/CM Templates)
                     const doc = await PDFDocument.load(templateBytes);
                     const form = doc.getForm();
                     const mapping = [
@@ -346,7 +325,6 @@
             const sanitize = (str) => str.toLowerCase().replace(/\s+/g, '_');
             const fileName = `${dateObj.getFullYear()}_${sanitize(divValRaw)}_${sanitize(badgeRaw)}_certificates.pdf`;
             download(out, fileName, "application/pdf");
-
         } catch (err) { alert(err.message); } finally { document.getElementById('loadingOverlay').style.display = 'none'; }
     }
     goBtn.onclick = generate;
